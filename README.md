@@ -1,6 +1,6 @@
 # Chrome AI Playground
 
-A modern web application that leverages Chrome 138+'s built-in AI APIs for translation, language detection, and text summarization. Built with React, TypeScript, Tailwind CSS, and Magic UI components for stunning visual effects.
+A modern web application that leverages Chrome 138+'s built-in AI APIs for translation, language detection, and text summarization. Built with React, TypeScript and Tailwind CSS.
 
 ## 🚀 Features
 
@@ -25,7 +25,6 @@ A modern web application that leverages Chrome 138+'s built-in AI APIs for trans
 ### ✨ Visual Effects & Animations
 - Smooth animations with Motion (Framer Motion)
 - Animated grid patterns in background
-- Magic cards with cursor tracking effects
 - Blur fade entrance animations
 - HyperText animated title
 - Progress indicators with smooth transitions
