@@ -221,7 +221,6 @@ The application automatically checks for API availability and provides user feed
 - [ ] Export functionality for results
 - [ ] Voice input/output integration
 - [ ] Real-time collaborative translation
-- [ ] Additional Magic UI effects
 
 ---
 
