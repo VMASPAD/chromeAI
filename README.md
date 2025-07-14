@@ -14,7 +14,7 @@ A modern web application and Chrome extension that leverages Chrome 138+'s built
 - Quick access from Chrome toolbar
 - Optimized for extension environment
 - All core features available
-
+- [Web Store](https://chromewebstore.google.com/detail/dcmocbmlpaneabpbihldcdlabkgmcfac?utm_source=item-share-cb)
 ## 🚀 Features
 
 ### 🌐 AI Translator
