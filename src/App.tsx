@@ -220,124 +220,126 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-secondary to-accent dark:from-background dark:via-secondary dark:to-accent relative overflow-hidden">
+    <div className="h-screen bg-gradient-to-br from-background via-secondary to-accent dark:from-background dark:via-secondary dark:to-accent relative overflow-hidden">
        <AnimatedGridPattern
-        numSquares={200}
-        maxOpacity={0.5}
+        numSquares={50}
+        maxOpacity={0.3}
         duration={3}
         repeatDelay={1.5}
         className={cn(
-          "[mask-image:radial-gradient(700px_circle_at_center,white,transparent)]",
+          "[mask-image:radial-gradient(300px_circle_at_center,white,transparent)]",
           "inset-x-0 inset-y-[-30%] h-[200%] skew-y-12",
         )}
       />
-      <div ref={containerRef} className="container mx-auto px-4 py-8 relative z-10">
+      <div ref={containerRef} className="container mx-auto px-3 py-4 relative z-10">
         <BlurFade inView={isInView} delay={0.1}>
           <motion.div 
-            className="text-center mb-12"
+            className="text-center mb-6"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
             <motion.h1 
-              className="text-6xl font-bold bg-gradient-to-r from-primary via-chart-1 to-chart-5 bg-clip-text text-transparent mb-4"
+              className="text-2xl font-bold bg-gradient-to-r from-primary via-chart-1 to-chart-5 bg-clip-text text-transparent mb-2"
               initial={{ scale: 0.9 }}
               animate={{ scale: 1 }}
               transition={{ duration: 0.5, delay: 0.2 }}
             >
-              <HyperText>              Chrome AI Playground
-</HyperText>
+              <HyperText>Chrome AI Playground</HyperText>
             </motion.h1>
             <motion.p 
-              className="text-xl text-muted-foreground max-w-2xl mx-auto"
+              className="text-sm text-muted-foreground"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.4 }}
             >
-              Explore the power of Chrome's built-in AI APIs for translation, language detection, and text summarization
+              AI-powered translation, detection & summarization
             </motion.p>
           </motion.div>
         </BlurFade>
 
         <BlurFade inView={isInView} delay={0.3}>
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-3 mb-8">
-                <TabsTrigger value="translator" className="flex items-center gap-2">
-                  <Languages className="w-4 h-4" />
-                  Translator
+              <TabsList className="grid w-full grid-cols-3 mb-4 text-xs">
+                <TabsTrigger value="translator" className="flex items-center gap-1 px-2">
+                  <Languages className="w-3 h-3" />
+                  <span className="hidden sm:inline">Translator</span>
+                  <span className="sm:hidden">Trans</span>
                 </TabsTrigger>
-                <TabsTrigger value="detector" className="flex items-center gap-2">
-                  <Globe className="w-4 h-4" />
-                  Language Detector
+                <TabsTrigger value="detector" className="flex items-center gap-1 px-2">
+                  <Globe className="w-3 h-3" />
+                  <span className="hidden sm:inline">Detector</span>
+                  <span className="sm:hidden">Detect</span>
                 </TabsTrigger>
-                <TabsTrigger value="summarizer" className="flex items-center gap-2">
-                  <FileText className="w-4 h-4" />
-                  Summarizer
+                <TabsTrigger value="summarizer" className="flex items-center gap-1 px-2">
+                  <FileText className="w-3 h-3" />
+                  <span className="hidden sm:inline">Summarizer</span>
+                  <span className="sm:hidden">Summary</span>
                 </TabsTrigger>
               </TabsList>
 
               {isLoading && (
                 <motion.div 
-                  className="mb-6"
+                  className="mb-3"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                 >
-                  <Progress value={progress} className="w-full" />
+                  <Progress value={progress} className="w-full h-2" />
                 </motion.div>
               )}
 
-              <TabsContent value="translator" className="space-y-6">
+              <TabsContent value="translator" className="space-y-3">
                 <motion.div
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.1 }}
                 >
                   <Card ref={translatorRef} className="relative overflow-hidden">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Wand2 className="w-5 h-5 text-primary" />
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-center gap-2 text-lg">
+                        <Wand2 className="w-4 h-4 text-primary" />
                         AI Translation
                       </CardTitle>
-                      <CardDescription>
-                        Translate text between languages using Chrome's built-in AI
+                      <CardDescription className="text-xs">
+                        Translate text using Chrome's AI
                       </CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-6">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="sourceLanguage">Source Language</Label>
+                    <CardContent className="space-y-3">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <Label htmlFor="sourceLanguage" className="text-xs">From</Label>
                           <LanguageCombobox 
                             value={sourceLanguage}
                             onValueChange={setSourceLanguage}
-                            placeholder="Select source language"
-                            className="w-full"
+                            placeholder="Source"
+                            className="w-full h-8 text-xs"
                           />
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="targetLanguage">Target Language</Label>
+                        <div className="space-y-1">
+                          <Label htmlFor="targetLanguage" className="text-xs">To</Label>
                           <LanguageCombobox 
                             value={targetLanguage}
                             onValueChange={setTargetLanguage}
-                            placeholder="Select target language"
-                            className="w-full"
+                            placeholder="Target"
+                            className="w-full h-8 text-xs"
                           />
                         </div>
                       </div>
                       
-                      <div className="space-y-2">
-                        <Label htmlFor="translatorText">Text to Translate</Label>
+                      <div className="space-y-1">
+                        <Label htmlFor="translatorText" className="text-xs">Text to Translate</Label>
                         <Textarea
                           id="translatorText"
-                          placeholder="Enter text to translate..."
+                          placeholder="Enter text..."
                           value={translatorText}
                           onChange={(e) => setTranslatorText(e.target.value)}
-                          className="min-h-[120px]"
+                          className="min-h-[80px] text-xs resize-none"
                         />
                       </div>
 
                       <Button 
                         onClick={handleTranslate} 
-                        className="w-full"
+                        className="w-full h-8 text-xs"
                         disabled={isLoading || !translatorText.trim()}
                       >
                         {isLoading ? "Translating..." : "Translate"}
@@ -347,11 +349,11 @@ function App() {
                         <motion.div
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
-                          className="space-y-2"
+                          className="space-y-1"
                         >
-                          <Label>Translation Result</Label>
-                          <div className="p-4 bg-muted rounded-lg border">
-                            <p className="text-sm">{translatedResult}</p>
+                          <Label className="text-xs">Result</Label>
+                          <div className="p-3 bg-muted rounded-lg border">
+                            <p className="text-xs">{translatedResult}</p>
                           </div>
                         </motion.div>
                       )}
@@ -360,37 +362,37 @@ function App() {
                 </motion.div>
               </TabsContent>
 
-              <TabsContent value="detector" className="space-y-6">
+              <TabsContent value="detector" className="space-y-3">
                 <motion.div
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.1 }}
                 >
                   <Card ref={detectorRef} className="relative overflow-hidden">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Brain className="w-5 h-5 text-chart-2" />
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-center gap-2 text-lg">
+                        <Brain className="w-4 h-4 text-chart-2" />
                         Language Detection
                       </CardTitle>
-                      <CardDescription>
-                        Automatically detect the language of any text
+                      <CardDescription className="text-xs">
+                        Detect the language of any text
                       </CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-6">
-                      <div className="space-y-2">
-                        <Label htmlFor="detectionText">Text to Analyze</Label>
+                    <CardContent className="space-y-3">
+                      <div className="space-y-1">
+                        <Label htmlFor="detectionText" className="text-xs">Text to Analyze</Label>
                         <Textarea
                           id="detectionText"
-                          placeholder="Enter text to detect language..."
+                          placeholder="Enter text to detect..."
                           value={detectionText}
                           onChange={(e) => setDetectionText(e.target.value)}
-                          className="min-h-[120px]"
+                          className="min-h-[80px] text-xs resize-none"
                         />
                       </div>
 
                       <Button 
                         onClick={handleDetectLanguage} 
-                        className="w-full"
+                        className="w-full h-8 text-xs"
                         disabled={isLoading || !detectionText.trim()}
                       >
                         {isLoading ? "Detecting..." : "Detect Language"}
@@ -400,11 +402,11 @@ function App() {
                         <motion.div
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
-                          className="space-y-2"
+                          className="space-y-1"
                         >
-                          <Label>Detection Result</Label>
-                          <div className="p-4 bg-muted rounded-lg border">
-                            <p className="text-sm font-medium">{detectionResult}</p>
+                          <Label className="text-xs">Result</Label>
+                          <div className="p-3 bg-muted rounded-lg border">
+                            <p className="text-xs font-medium">{detectionResult}</p>
                           </div>
                         </motion.div>
                       )}
@@ -413,52 +415,52 @@ function App() {
                 </motion.div>
               </TabsContent>
 
-              <TabsContent value="summarizer" className="space-y-6">
+              <TabsContent value="summarizer" className="space-y-3">
                 <motion.div
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.1 }}
                 >
                   <Card ref={summarizerRef} className="relative overflow-hidden">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Lightbulb className="w-5 h-5 text-chart-4" />
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-center gap-2 text-lg">
+                        <Lightbulb className="w-4 h-4 text-chart-4" />
                         AI Summarization
                       </CardTitle>
-                      <CardDescription>
-                        Generate concise summaries of long texts
+                      <CardDescription className="text-xs">
+                        Generate concise summaries
                       </CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-6">
-                      <div className="space-y-2">
-                        <Label htmlFor="summaryType">Summary Type</Label>
+                    <CardContent className="space-y-3">
+                      <div className="space-y-1">
+                        <Label htmlFor="summaryType" className="text-xs">Summary Type</Label>
                         <Select value={summaryType} onValueChange={(value: typeof summaryType) => setSummaryType(value)}>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select summary type" />
+                          <SelectTrigger className="w-full h-8 text-xs">
+                            <SelectValue placeholder="Select type" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="tldr">TL;DR - Quick overview</SelectItem>
-                            <SelectItem value="key-points">Key Points - Bullet format</SelectItem>
-                            <SelectItem value="teaser">Teaser - Engaging summary</SelectItem>
-                            <SelectItem value="headline">Headline - Title format</SelectItem>
+                            <SelectItem value="tldr">TL;DR</SelectItem>
+                            <SelectItem value="key-points">Key Points</SelectItem>
+                            <SelectItem value="teaser">Teaser</SelectItem>
+                            <SelectItem value="headline">Headline</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                       
-                      <div className="space-y-2">
-                        <Label htmlFor="summarizerText">Text to Summarize</Label>
+                      <div className="space-y-1">
+                        <Label htmlFor="summarizerText" className="text-xs">Text to Summarize</Label>
                         <Textarea
                           id="summarizerText"
-                          placeholder="Enter long text to summarize..."
+                          placeholder="Enter long text..."
                           value={summarizerText}
                           onChange={(e) => setSummarizerText(e.target.value)}
-                          className="min-h-[200px]"
+                          className="min-h-[100px] text-xs resize-none"
                         />
                       </div>
 
                       <Button 
                         onClick={handleSummarize} 
-                        className="w-full"
+                        className="w-full h-8 text-xs"
                         disabled={isLoading || !summarizerText.trim()}
                       >
                         {isLoading ? "Summarizing..." : "Generate Summary"}
@@ -468,11 +470,11 @@ function App() {
                         <motion.div
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
-                          className="space-y-2"
+                          className="space-y-1"
                         >
-                          <Label>Summary Result</Label>
-                          <div className="p-4 bg-muted rounded-lg border">
-                            <p className="text-sm leading-relaxed">{summaryResult}</p>
+                          <Label className="text-xs">Result</Label>
+                          <div className="p-3 bg-muted rounded-lg border max-h-32 overflow-y-auto">
+                            <p className="text-xs leading-relaxed">{summaryResult}</p>
                           </div>
                         </motion.div>
                       )}
@@ -486,12 +488,12 @@ function App() {
 
         <BlurFade inView={isInView} delay={0.6}>
           <motion.div 
-            className="text-center mt-12 text-sm text-muted-foreground"
+            className="text-center mt-4 text-xs text-muted-foreground"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.8 }}
           >
-            <p>Powered by Chrome's Built-in AI APIs | Requires Chrome 138+ with appropriate flags</p>
+            <p>Chrome 138+ required</p>
           </motion.div>
         </BlurFade>
       </div>

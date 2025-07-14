@@ -1,6 +1,19 @@
 # Chrome AI Playground
 
-A modern web application that leverages Chrome 138+'s built-in AI APIs for translation, language detection, and text summarization. Built with React, TypeScript and Tailwind CSS.
+A modern web application and Chrome extension that leverages Chrome 138+'s built-in AI APIs for translation, language detection, and text summarization. Built with React, TypeScript and Tailwind CSS.
+
+## 📦 Available Formats
+
+### 🌐 Web Application
+- Full-featured web interface
+- Optimized for desktop browsers
+- Complete visual effects and animations
+
+### 🧩 Chrome Extension
+- Compact popup interface (400x600px)
+- Quick access from Chrome toolbar
+- Optimized for extension environment
+- All core features available
 
 ## 🚀 Features
 
@@ -80,6 +93,8 @@ This application requires Chrome 138+ with specific experimental features enable
 
 ## 🚀 Installation & Setup
 
+### Option 1: Web Application
+
 1. **Clone the repository**:
    ```bash
    git clone <repository-url>
@@ -99,6 +114,23 @@ This application requires Chrome 138+ with specific experimental features enable
 4. **Open in browser**:
    - Navigate to `http://localhost:5173`
    - Ensure you're using Chrome 138+ with enabled flags
+
+### Option 2: Chrome Extension
+
+1. **Build the extension**:
+   ```bash
+   npm install
+   npm run build:extension
+   ```
+
+2. **Load in Chrome**:
+   - Open `chrome://extensions/`
+   - Enable "Developer mode"
+   - Click "Load unpacked"
+   - Select the `dist` folder
+   - Pin the extension for easy access
+
+📖 **Detailed Extension Guide**: See [EXTENSION_GUIDE.md](./EXTENSION_GUIDE.md) for complete installation instructions.
 
 ## 💡 Usage Guide
 
