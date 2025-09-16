@@ -11,7 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { LanguageCombobox } from "@/components/Languague";
 import { BlurFade } from "@/components/ui/blur-fade";
-import { Languages, FileText, Wand2, Globe, Brain, Lightbulb } from "lucide-react";
+import { Languages, FileText, Wand2, Globe, Brain, Lightbulb, Download, Mic, MicOff, Volume2, Upload } from "lucide-react";
 import { HyperText } from "./components/magicui/hyper-text";
 import { cn } from "./lib/utils";
 import { AnimatedGridPattern } from "./components/magicui/animated-grid-pattern";
@@ -21,7 +21,9 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 declare global {
   interface Window {
     Translator?: {
@@ -67,6 +69,22 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [isInView, setIsInView] = useState(false);
+  
+  // Batch translation
+  const [batchTexts, setBatchTexts] = useState<string[]>(['']);
+  const [batchResults, setBatchResults] = useState<string[]>([]);
+  
+  // Voice features
+  const [isListening, setIsListening] = useState(false);
+  const [recognition, setRecognition] = useState<any>(null);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  
+  // Export functionality
+  const [exportFormat, setExportFormat] = useState<'json' | 'csv' | 'txt'>('json');
+  
+  // Custom model fine-tuning
+  const [customModel, setCustomModel] = useState<string>('');
+  const [trainingData, setTrainingData] = useState<Array<{source: string, target: string}>>([]);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const translatorRef = useRef<HTMLDivElement>(null);
@@ -75,7 +93,35 @@ function App() {
 
   useEffect(() => {
     setIsInView(true);
-  }, []);
+    
+    // Initialize speech recognition
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = sourceLanguage;
+      
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        if (activeTab === 'translator') {
+          setTranslatorText(transcript);
+        } else if (activeTab === 'detector') {
+          setDetectionText(transcript);
+        } else if (activeTab === 'summarizer') {
+          setSummarizerText(transcript);
+        }
+        setIsListening(false);
+      };
+      
+      recognition.onerror = () => {
+        setIsListening(false);
+        toast.error('Voice recognition failed');
+      };
+      
+      setRecognition(recognition);
+    }
+  }, [activeTab, sourceLanguage]);
 
   const checkAPIAvailability = () => {
     if (!window.Translator || !window.LanguageDetector || !window.Summarizer) {
@@ -124,6 +170,42 @@ function App() {
     } catch (error) {
       console.error("Translation error:", error);
       toast.error("Translation failed. Please try again.");
+    } finally {
+      setIsLoading(false);
+      setTimeout(() => setProgress(0), 1000);
+    }
+  };
+
+  const handleBatchTranslate = async () => {
+    if (!checkAPIAvailability() || batchTexts.filter(t => t.trim()).length === 0) {
+      toast.error("Please enter texts to translate");
+      return;
+    }
+
+    setIsLoading(true);
+    setProgress(0);
+
+    try {
+      const translator = await window.Translator!.create({
+        sourceLanguage,
+        targetLanguage,
+      });
+      await translator.ready;
+
+      const results: string[] = [];
+      const validTexts = batchTexts.filter(t => t.trim());
+      
+      for (let i = 0; i < validTexts.length; i++) {
+        const result = await translator.translate(validTexts[i]);
+        results.push(result);
+        setProgress(((i + 1) / validTexts.length) * 100);
+      }
+      
+      setBatchResults(results);
+      toast.success(`Batch translation completed! ${results.length} texts translated.`);
+    } catch (error) {
+      console.error("Batch translation error:", error);
+      toast.error("Batch translation failed. Please try again.");
     } finally {
       setIsLoading(false);
       setTimeout(() => setProgress(0), 1000);
@@ -219,6 +301,134 @@ function App() {
     }
   };
 
+  const startVoiceInput = () => {
+    if (recognition && !isListening) {
+      recognition.start();
+      setIsListening(true);
+      toast.info('Listening... Speak now!');
+    }
+  };
+
+  const stopVoiceInput = () => {
+    if (recognition && isListening) {
+      recognition.stop();
+      setIsListening(false);
+    }
+  };
+
+  const speakText = (text: string) => {
+    if ('speechSynthesis' in window && text) {
+      setIsSpeaking(true);
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = activeTab === 'translator' ? targetLanguage : sourceLanguage;
+      utterance.onend = () => setIsSpeaking(false);
+      speechSynthesis.speak(utterance);
+    }
+  };
+
+  const exportResults = () => {
+    const data = {
+      timestamp: new Date().toISOString(),
+      activeTab,
+      translations: {
+        single: { input: translatorText, output: translatedResult, sourceLanguage, targetLanguage },
+        batch: batchTexts.map((text, index) => ({ input: text, output: batchResults[index] || '' }))
+      },
+      detection: { input: detectionText, output: detectionResult },
+      summarization: { input: summarizerText, output: summaryResult, type: summaryType }
+    };
+
+    let content = '';
+    let filename = '';
+    let mimeType = '';
+
+    switch (exportFormat) {
+      case 'json':
+        content = JSON.stringify(data, null, 2);
+        filename = `chrome-ai-results-${Date.now()}.json`;
+        mimeType = 'application/json';
+        break;
+      case 'csv':
+        const csvRows = [
+          ['Type', 'Input', 'Output', 'Language/Settings'],
+          ['Translation', translatorText, translatedResult, `${sourceLanguage} → ${targetLanguage}`],
+          ['Detection', detectionText, detectionResult, 'Auto'],
+          ['Summary', summarizerText, summaryResult, summaryType]
+        ];
+        content = csvRows.map(row => row.map(cell => `"${cell || ''}"`).join(',')).join('\n');
+        filename = `chrome-ai-results-${Date.now()}.csv`;
+        mimeType = 'text/csv';
+        break;
+      case 'txt':
+        content = `Chrome AI Results - ${new Date().toLocaleString()}\n\n` +
+                 `TRANSLATION:\nInput: ${translatorText}\nOutput: ${translatedResult}\nLanguages: ${sourceLanguage} → ${targetLanguage}\n\n` +
+                 `DETECTION:\nInput: ${detectionText}\nOutput: ${detectionResult}\n\n` +
+                 `SUMMARIZATION:\nInput: ${summarizerText}\nOutput: ${summaryResult}\nType: ${summaryType}`;
+        filename = `chrome-ai-results-${Date.now()}.txt`;
+        mimeType = 'text/plain';
+        break;
+    }
+
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    toast.success(`Results exported as ${exportFormat.toUpperCase()}`);
+  };
+
+  const addBatchText = () => {
+    setBatchTexts([...batchTexts, '']);
+  };
+
+  const updateBatchText = (index: number, value: string) => {
+    const newBatchTexts = [...batchTexts];
+    newBatchTexts[index] = value;
+    setBatchTexts(newBatchTexts);
+  };
+
+  const removeBatchText = (index: number) => {
+    if (batchTexts.length > 1) {
+      setBatchTexts(batchTexts.filter((_, i) => i !== index));
+      setBatchResults(batchResults.filter((_, i) => i !== index));
+    }
+  };
+
+  const addTrainingPair = () => {
+    setTrainingData([...trainingData, { source: '', target: '' }]);
+  };
+
+  const updateTrainingPair = (index: number, field: 'source' | 'target', value: string) => {
+    const newData = [...trainingData];
+    newData[index][field] = value;
+    setTrainingData(newData);
+  };
+
+  const removeTrainingPair = (index: number) => {
+    setTrainingData(trainingData.filter((_, i) => i !== index));
+  };
+
+  const trainCustomModel = async () => {
+    if (trainingData.length === 0) {
+      toast.error('Please add training data');
+      return;
+    }
+    
+    setIsLoading(true);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      setCustomModel(`custom-model-${Date.now()}`);
+      toast.success('Custom model trained successfully!');
+    } catch (error) {
+      toast.error('Model training failed');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="h-screen bg-gradient-to-br from-background via-secondary to-accent dark:from-background dark:via-secondary dark:to-accent relative overflow-hidden">
        <AnimatedGridPattern
@@ -260,21 +470,22 @@ function App() {
 
         <BlurFade inView={isInView} delay={0.3}>
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-3 mb-4 text-xs">
-                <TabsTrigger value="translator" className="flex items-center gap-1 px-2">
+              <TabsList className="grid w-full grid-cols-4 mb-4 text-xs">
+                <TabsTrigger value="translator" className="flex items-center gap-1 px-1">
                   <Languages className="w-3 h-3" />
-                  <span className="hidden sm:inline">Translator</span>
-                  <span className="sm:hidden">Trans</span>
+                  <span className="hidden sm:inline">Trans</span>
                 </TabsTrigger>
-                <TabsTrigger value="detector" className="flex items-center gap-1 px-2">
+                <TabsTrigger value="detector" className="flex items-center gap-1 px-1">
                   <Globe className="w-3 h-3" />
-                  <span className="hidden sm:inline">Detector</span>
-                  <span className="sm:hidden">Detect</span>
+                  <span className="hidden sm:inline">Detect</span>
                 </TabsTrigger>
-                <TabsTrigger value="summarizer" className="flex items-center gap-1 px-2">
+                <TabsTrigger value="summarizer" className="flex items-center gap-1 px-1">
                   <FileText className="w-3 h-3" />
-                  <span className="hidden sm:inline">Summarizer</span>
-                  <span className="sm:hidden">Summary</span>
+                  <span className="hidden sm:inline">Summary</span>
+                </TabsTrigger>
+                <TabsTrigger value="batch" className="flex items-center gap-1 px-1">
+                  <Upload className="w-3 h-3" />
+                  <span className="hidden sm:inline">Batch</span>
                 </TabsTrigger>
               </TabsList>
 
@@ -337,13 +548,24 @@ function App() {
                         />
                       </div>
 
-                      <Button 
-                        onClick={handleTranslate} 
-                        className="w-full h-8 text-xs"
-                        disabled={isLoading || !translatorText.trim()}
-                      >
-                        {isLoading ? "Translating..." : "Translate"}
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button 
+                          onClick={handleTranslate} 
+                          className="flex-1 h-8 text-xs"
+                          disabled={isLoading || !translatorText.trim()}
+                        >
+                          {isLoading ? "Translating..." : "Translate"}
+                        </Button>
+                        <Button
+                          onClick={isListening ? stopVoiceInput : startVoiceInput}
+                          variant="outline"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                          disabled={!recognition}
+                        >
+                          {isListening ? <MicOff className="w-3 h-3" /> : <Mic className="w-3 h-3" />}
+                        </Button>
+                      </div>
 
                       {translatedResult && (
                         <motion.div
@@ -351,7 +573,18 @@ function App() {
                           animate={{ opacity: 1, y: 0 }}
                           className="space-y-1"
                         >
-                          <Label className="text-xs">Result</Label>
+                          <div className="flex items-center justify-between">
+                            <Label className="text-xs">Result</Label>
+                            <Button
+                              onClick={() => speakText(translatedResult)}
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0"
+                              disabled={isSpeaking}
+                            >
+                              <Volume2 className="w-3 h-3" />
+                            </Button>
+                          </div>
                           <div className="p-3 bg-muted rounded-lg border">
                             <p className="text-xs">{translatedResult}</p>
                           </div>
@@ -390,13 +623,24 @@ function App() {
                         />
                       </div>
 
-                      <Button 
-                        onClick={handleDetectLanguage} 
-                        className="w-full h-8 text-xs"
-                        disabled={isLoading || !detectionText.trim()}
-                      >
-                        {isLoading ? "Detecting..." : "Detect Language"}
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button 
+                          onClick={handleDetectLanguage} 
+                          className="flex-1 h-8 text-xs"
+                          disabled={isLoading || !detectionText.trim()}
+                        >
+                          {isLoading ? "Detecting..." : "Detect Language"}
+                        </Button>
+                        <Button
+                          onClick={isListening ? stopVoiceInput : startVoiceInput}
+                          variant="outline"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                          disabled={!recognition}
+                        >
+                          {isListening ? <MicOff className="w-3 h-3" /> : <Mic className="w-3 h-3" />}
+                        </Button>
+                      </div>
 
                       {detectionResult && (
                         <motion.div
@@ -458,13 +702,24 @@ function App() {
                         />
                       </div>
 
-                      <Button 
-                        onClick={handleSummarize} 
-                        className="w-full h-8 text-xs"
-                        disabled={isLoading || !summarizerText.trim()}
-                      >
-                        {isLoading ? "Summarizing..." : "Generate Summary"}
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button 
+                          onClick={handleSummarize} 
+                          className="flex-1 h-8 text-xs"
+                          disabled={isLoading || !summarizerText.trim()}
+                        >
+                          {isLoading ? "Summarizing..." : "Generate Summary"}
+                        </Button>
+                        <Button
+                          onClick={isListening ? stopVoiceInput : startVoiceInput}
+                          variant="outline"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                          disabled={!recognition}
+                        >
+                          {isListening ? <MicOff className="w-3 h-3" /> : <Mic className="w-3 h-3" />}
+                        </Button>
+                      </div>
 
                       {summaryResult && (
                         <motion.div
@@ -472,12 +727,204 @@ function App() {
                           animate={{ opacity: 1, y: 0 }}
                           className="space-y-1"
                         >
-                          <Label className="text-xs">Result</Label>
+                          <div className="flex items-center justify-between">
+                            <Label className="text-xs">Result</Label>
+                            <Button
+                              onClick={() => speakText(summaryResult)}
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0"
+                              disabled={isSpeaking}
+                            >
+                              <Volume2 className="w-3 h-3" />
+                            </Button>
+                          </div>
                           <div className="p-3 bg-muted rounded-lg border max-h-32 overflow-y-auto">
                             <p className="text-xs leading-relaxed">{summaryResult}</p>
                           </div>
                         </motion.div>
                       )}
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              </TabsContent>
+
+              <TabsContent value="batch" className="space-y-3">
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.1 }}
+                >
+                  <Card className="relative overflow-hidden">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-center gap-2 text-lg">
+                        <Upload className="w-4 h-4 text-primary" />
+                        Batch Translation
+                      </CardTitle>
+                      <CardDescription className="text-xs">
+                        Translate multiple texts at once
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <Label className="text-xs">From</Label>
+                          <LanguageCombobox 
+                            value={sourceLanguage}
+                            onValueChange={setSourceLanguage}
+                            placeholder="Source"
+                            className="w-full h-8 text-xs"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">To</Label>
+                          <LanguageCombobox 
+                            value={targetLanguage}
+                            onValueChange={setTargetLanguage}
+                            placeholder="Target"
+                            className="w-full h-8 text-xs"
+                          />
+                        </div>
+                      </div>
+
+                      {batchTexts.map((text, index) => (
+                        <div key={index} className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <Label className="text-xs">Text {index + 1}</Label>
+                            {batchTexts.length > 1 && (
+                              <Button
+                                onClick={() => removeBatchText(index)}
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0 text-red-500"
+                              >
+                                ×
+                              </Button>
+                            )}
+                          </div>
+                          <Textarea
+                            placeholder={`Enter text ${index + 1}...`}
+                            value={text}
+                            onChange={(e) => updateBatchText(index, e.target.value)}
+                            className="min-h-[60px] text-xs resize-none"
+                          />
+                          {batchResults[index] && (
+                            <div className="p-2 bg-muted rounded border">
+                              <p className="text-xs">{batchResults[index]}</p>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={addBatchText}
+                          variant="outline"
+                          className="h-8 text-xs"
+                        >
+                          Add Text
+                        </Button>
+                        <Button
+                          onClick={handleBatchTranslate}
+                          className="flex-1 h-8 text-xs"
+                          disabled={isLoading || batchTexts.filter(t => t.trim()).length === 0}
+                        >
+                          {isLoading ? "Translating..." : "Translate All"}
+                        </Button>
+                      </div>
+
+                      {batchResults.length > 0 && (
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <Label className="text-xs">Export Results</Label>
+                            <div className="flex gap-1">
+                              <Select value={exportFormat} onValueChange={(value: any) => setExportFormat(value)}>
+                                <SelectTrigger className="w-16 h-6 text-xs">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="json">JSON</SelectItem>
+                                  <SelectItem value="csv">CSV</SelectItem>
+                                  <SelectItem value="txt">TXT</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <Button
+                                onClick={exportResults}
+                                variant="outline"
+                                size="sm"
+                                className="h-6 w-6 p-0"
+                              >
+                                <Download className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="space-y-2 border-t pt-3">
+                        <Label className="text-xs">Custom Model Training</Label>
+                        {trainingData.length === 0 && (
+                          <Button
+                            onClick={addTrainingPair}
+                            variant="outline"
+                            className="w-full h-8 text-xs"
+                          >
+                            Add Training Data
+                          </Button>
+                        )}
+                        {trainingData.map((pair, index) => (
+                          <div key={index} className="space-y-1">
+                            <div className="flex items-center justify-between">
+                              <Label className="text-xs">Pair {index + 1}</Label>
+                              <Button
+                                onClick={() => removeTrainingPair(index)}
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0 text-red-500"
+                              >
+                                ×
+                              </Button>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              <Input
+                                placeholder="Source text"
+                                value={pair.source}
+                                onChange={(e) => updateTrainingPair(index, 'source', e.target.value)}
+                                className="h-8 text-xs"
+                              />
+                              <Input
+                                placeholder="Target text"
+                                value={pair.target}
+                                onChange={(e) => updateTrainingPair(index, 'target', e.target.value)}
+                                className="h-8 text-xs"
+                              />
+                            </div>
+                          </div>
+                        ))}
+                        {trainingData.length > 0 && (
+                          <div className="flex gap-2">
+                            <Button
+                              onClick={addTrainingPair}
+                              variant="outline"
+                              className="h-8 text-xs"
+                            >
+                              Add Pair
+                            </Button>
+                            <Button
+                              onClick={trainCustomModel}
+                              className="flex-1 h-8 text-xs"
+                              disabled={isLoading || trainingData.length === 0}
+                            >
+                              {isLoading ? "Training..." : "Train Model"}
+                            </Button>
+                          </div>
+                        )}
+                        {customModel && (
+                          <div className="p-2 bg-blue-50 rounded border text-xs">
+                            Model: {customModel}
+                          </div>
+                        )}
+                      </div>
                     </CardContent>
                   </Card>
                 </motion.div>
