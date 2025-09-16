@@ -247,11 +247,10 @@ The application automatically checks for API availability and provides user feed
 
 ## 🌟 Features Roadmap
 
-- [ ] Batch translation support
-- [ ] Custom language model fine-tuning
-- [ ] Export functionality for results
-- [ ] Voice input/output integration
-- [ ] Real-time collaborative translation
+- [x] Batch translation support
+- [x] Custom language model fine-tuning
+- [x] Export functionality for results
+- [x] Voice input/output integration
 
 ---
 
